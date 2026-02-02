@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Number Hunt</title>
+
+  <style>
+    :root{
+      --bg:#070a10;
+      --txt:#e5e7eb;
+      --muted:#94a3b8;
+      --good:#22c55e;
+      --bad:#ef4444;
+      --accent:#38bdf8;
+      --ring: rgba(56,189,248,.35);
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+
+      background:
+        radial-gradient(900px 600px at 20% 0%, rgba(56,189,248,.18), transparent 60%),
+        radial-gradient(900px 600px at 100% 10%, rgba(34,197,94,.14), transparent 55%),
+        radial-gradient(700px 600px at 60% 110%, rgba(168,85,247,.12), transparent 60%),
+        var(--bg);
+
+      color:var(--txt);
+
+      height:100vh;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:12px;
+    }
+
+    /* Logo juu kulia */
+    .logoBox{
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 10px;
+      border-radius: 14px;
+      background: rgba(15,23,42,.55);
+      border: 1px solid rgba(148,163,184,.20);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 12px 24px rgba(0,0,0,.25);
+      z-index: 999;
+    }
+    .logoBox img{
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(255,255,255,.06);
+    }
+    .logoBox .txt{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.1;
+    }
+    .logoBox .txt b{ color: var(--txt); }
+
+    .app{
+      width:min(1040px, 100%);
+      height: calc(100vh - 24px);
+      overflow:hidden;
+      display:grid;
+      gap:12px;
+    }
+
+    .top{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:stretch;
+    }
+
+    .panel{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(148,163,184,.20);
+      border-radius:16px;
+      padding:12px;
+      flex:1;
+      min-width: 260px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.28);
+      backdrop-filter: blur(8px);
+    }
+
+    .titleRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    h1{
+      font-size:18px;
+      margin:0;
+      letter-spacing:.4px;
+    }
+
+    .small{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:6px;
+      line-height:1.35;
+    }
+
+    .stats{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+
+    .stat{
+      background:rgba(15,23,42,.55);
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:14px;
+      padding:8px 10px;
+      min-width: 120px;
+      flex:1;
+    }
+
+    .stat .label{font-size:12px;color:var(--muted)}
+    .stat .value{font-size:18px;font-weight:800;margin-top:4px}
+
+    .timerBar{
+      margin-top:10px;
+      height:10px;
+      border-radius:999px;
+      background:rgba(148,163,184,.18);
+      overflow:hidden;
+      border:1px solid rgba(148,163,184,.18);
+    }
+
+    .timerFill{
+      height:100%;
+      width:100%;
+      background: linear-gradient(90deg, var(--good), var(--accent));
+      transition: width .2s linear, background .2s linear;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
+
+    button{
+      border:0;
+      border-radius:14px;
+      padding:10px 12px;
+      background:rgba(56,189,248,.16);
+      color:var(--txt);
+      border:1px solid rgba(56,189,248,.35);
+      cursor:pointer;
+      font-weight:700;
+      transition: transform .08s ease, background .15s ease, border-color .15s ease;
+    }
+    button:hover{ background:rgba(56,189,248,.22); border-color: rgba(56,189,248,.55); }
+    button:active{ transform: scale(.98); }
+    button.secondary{ background:rgba(148,163,184,.10); border-color: rgba(148,163,184,.25); }
+
+    .gridWrap{
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      border:1px solid rgba(148,163,184,.20);
+      border-radius:16px;
+      padding:12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.28);
+      overflow:hidden;
+      max-height: calc(100vh - 260px);
+    }
+
+    .gridHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+
+    .targets{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+    }
+
+    .chip{
+      padding:7px 12px;
+      border-radius:999px;
+      font-weight:900;
+      letter-spacing:.3px;
+      font-size:13px;
+      background: linear-gradient(90deg, rgba(56,189,248,.25), rgba(168,85,247,.20));
+      border: 1px solid rgba(56,189,248,.40);
+      box-shadow: 0 10px 20px rgba(0,0,0,.25);
+    }
+    .chip.done{
+      background: linear-gradient(90deg, rgba(34,197,94,.22), rgba(56,189,248,.18));
+      border-color: rgba(34,197,94,.45);
+      color: #d1fae5;
+      text-decoration: line-through;
+      opacity: .95;
+    }
+
+    .grid{
+      display:grid;
+      gap:8px;
+      grid-template-columns: repeat(6, 1fr);
+    }
+    @media (min-width: 720px){
+      .grid{ grid-template-columns: repeat(8, 1fr); }
+    }
+    @media (min-width: 980px){
+      .grid{ grid-template-columns: repeat(10, 1fr); }
+    }
+
+    .cell{
+      user-select:none;
+      background: rgba(17,24,39,.7);
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:14px;
+      padding:10px 6px;
+      text-align:center;
+      font-weight:900;
+      font-size:16px;
+      cursor:pointer;
+      transition: transform .08s ease, border-color .15s ease, background .15s ease, box-shadow .15s ease, opacity .15s ease;
+      box-shadow: 0 0 0 0 var(--ring);
+    }
+    .cell:hover{
+      border-color: rgba(56,189,248,.45);
+      box-shadow: 0 0 0 6px var(--ring);
+    }
+    .cell:active{ transform: scale(.98); }
+    .cell.hit{
+      background: rgba(34,197,94,.18);
+      border-color: rgba(34,197,94,.40);
+      box-shadow: none;
+      cursor: default;
+    }
+    .cell.miss{
+      background: rgba(239,68,68,.18);
+      border-color: rgba(239,68,68,.40);
+      box-shadow: none;
+    }
+    .cell.disabled{
+      opacity:.6;
+      cursor: default;
+      box-shadow:none;
+    }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%);
+      background: rgba(15,23,42,.92);
+      border:1px solid rgba(148,163,184,.22);
+      color: var(--txt);
+      padding:10px 14px;
+      border-radius:14px;
+      box-shadow:0 12px 30px rgba(0,0,0,.35);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease, transform .18s ease;
+      font-weight:700;
+      z-index: 999;
+    }
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(-6px);
+    }
+    .toast.good{ border-color: rgba(34,197,94,.35); }
+    .toast.bad{ border-color: rgba(239,68,68,.35); }
+  </style>
+</head>
+
+<body>
+
+  <!-- LOGO (weka logo.jpg kwenye folder moja na index.html) -->
+  <div class="logoBox">
+    <img src="img/aman.jpg" alt="Logo" onerror="this.style.display='none'">
+    <div class="txt">
+      <div><b>Number Hunt</b></div>
+      <div>By Aman</div>
+    </div>
+  </div>
+
+  <div class="app">
+    <div class="top">
+      <div class="panel">
+        <div class="titleRow">
+          <h1>🎯 Number Hunt</h1>
+          <div class="chip" id="modeChip">Mode: Normal</div>
+        </div>
+
+        <div class="small">
+          Bonyeza namba kwenye grid zinazoendana na “Targets”. Ukizimaliza zote kabla muda kuisha, unaenda level inayofuata.
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="label">Level</div>
+            <div class="value" id="level">1</div>
+          </div>
+          <div class="stat">
+            <div class="label">Score</div>
+            <div class="value" id="score">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">Time Left</div>
+            <div class="value" id="timeLeft">30s</div>
+          </div>
+        </div>
+
+        <div class="timerBar" aria-label="Timer">
+          <div class="timerFill" id="timerFill"></div>
+        </div>
+
+        <div class="actions">
+          <button id="startBtn">▶️ Anza</button>
+          <button class="secondary" id="resetBtn">🔄 Reset</button>
+          <button class="secondary" id="modeBtn">⚙️ Badilisha Mode</button>
+          <button class="secondary" id="soundBtn">🔊 Sound: ON</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h1>📌 Sheria (Quick)</h1>
+        <div class="small" id="rules">
+          • Targets hutolewa randomly.<br>
+          • Ukibofya target sahihi: +10 pts<br>
+          • Ukikosea: -5 pts (na cell inakuwa nyekundu kidogo)<br>
+          • Ukimaliza targets zote: bonus + (timeLeft × 2) pts
+        </div>
+        <div class="small" style="margin-top:10px;">
+          Tip: Mode “Hard” ina muda mfupi na targets nyingi.
+        </div>
+      </div>
+    </div>
+
+    <div class="gridWrap">
+      <div class="gridHeader">
+        <div class="small"><b>Targets:</b> Bonyeza hizi namba:</div>
+        <div class="targets" id="targets"></div>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  // =========================
+  // SETTINGS
+  // =========================
+  const MODES = {
+    Normal: { gridSize: 48, min: 1, max: 50, targets: 5, time: 30 },
+    Hard:   { gridSize: 60, min: 1, max: 99, targets: 8, time: 25 },
+    Pro:    { gridSize: 72, min: 1, max: 150, targets: 10, time: 22 }
+  };
+
+  const SOUND_KEY = "nh_sound_on_v1";
+
+  let modeNames = Object.keys(MODES);
+  let modeIndex = 0;
+
+  // =========================
+  // STATE
+  // =========================
+  let level = 1;
+  let score = 0;
+  let timeLeft = MODES[modeNames[modeIndex]].time;
+  let totalTime = timeLeft;
+  let timer = null;
+  let running = false;
+
+  let targetSet = new Set();
+  let foundSet = new Set();
+
+  // sound state (persist)
+  let soundOn = (localStorage.getItem(SOUND_KEY) ?? "1") === "1";
+
+  // =========================
+  // DOM
+  // =========================
+  const elLevel = document.getElementById("level");
+  const elScore = document.getElementById("score");
+  const elTime = document.getElementById("timeLeft");
+  const elTargets = document.getElementById("targets");
+  const elGrid = document.getElementById("grid");
+  const elTimerFill = document.getElementById("timerFill");
+  const elStartBtn = document.getElementById("startBtn");
+  const elResetBtn = document.getElementById("resetBtn");
+  const elModeBtn = document.getElementById("modeBtn");
+  const elModeChip = document.getElementById("modeChip");
+  const elSoundBtn = document.getElementById("soundBtn");
+  const toast = document.getElementById("toast");
+
+  // =========================
+  // SOUND (Web Audio)
+  // =========================
+  let audioCtx = null;
+
+  function initSound(){
+    if(!soundOn) return;
+    if(!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  }
+
+  function vibrate(pattern){
+    // works on many android devices; ignored if not supported
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  }
+
+  function play(freq=400, dur=0.1, type="sine", vol=0.07){
+    if(!soundOn) return;
+    if(!audioCtx) return;
+
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+
+    o.type = type;
+    o.frequency.value = freq;
+
+    g.gain.value = vol;
+
+    o.connect(g);
+    g.connect(audioCtx.destination);
+
+    o.start();
+    o.stop(audioCtx.currentTime + dur);
+  }
+
+  function sClick(){ play(520,0.06,"triangle",0.06); vibrate(10); }
+  function sGood(){ play(820,0.08,"sine",0.07); vibrate([15]); }
+  function sBad(){  play(160,0.12,"sawtooth",0.06); vibrate([30, 40, 30]); }
+  function sWin(){
+    play(600,0.08,"sine",0.07);
+    setTimeout(()=>play(900,0.08,"sine",0.07), 90);
+    vibrate([20, 30, 20, 40, 30, 60]);
+  }
+
+  function updateSoundUI(){
+    elSoundBtn.textContent = soundOn ? "🔊 Sound: ON" : "🔇 Sound: OFF";
+  }
+
+  // =========================
+  // HELPERS
+  // =========================
+  const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+  function showToast(msg, type = "good") {
+    toast.textContent = msg;
+    toast.className = `toast show ${type}`;
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.className = "toast", 900);
+  }
+
+  function updateUI() {
+    elLevel.textContent = level;
+    elScore.textContent = score;
+    elTime.textContent = `${timeLeft}s`;
+
+    const pct = Math.max(0, (timeLeft / totalTime) * 100);
+    elTimerFill.style.width = pct + "%";
+
+    if (pct < 30) elTimerFill.style.background = "linear-gradient(90deg, #ef4444, #f59e0b)";
+    else elTimerFill.style.background = "linear-gradient(90deg, #22c55e, #38bdf8)";
+
+    elModeChip.textContent = `Mode: ${modeNames[modeIndex]}`;
+  }
+
+  function stopTimer() {
+    if (timer) clearInterval(timer);
+    timer = null;
+    running = false;
+    elStartBtn.textContent = "▶️ Anza";
+  }
+
+  function startTimer() {
+    if (running) return;
+    running = true;
+    elStartBtn.textContent = "⏸️ Pause";
+
+    timer = setInterval(() => {
+      timeLeft--;
+      updateUI();
+
+      if (timeLeft <= 0) {
+        timeLeft = 0;
+        updateUI();
+        stopTimer();
+        showToast("Muda umeisha ⏳ — Jaribu tena!", "bad");
+        sBad();
+      }
+    }, 1000);
+  }
+
+  function toggleStartPause() {
+    // first user gesture = allow audio on mobile
+    initSound();
+    sClick();
+
+    if (!running && timeLeft > 0) startTimer();
+    else stopTimer();
+  }
+
+  function uniqueTargets(count, guaranteedInGrid) {
+    const s = new Set();
+    while (s.size < count) {
+      const n = guaranteedInGrid[randInt(0, guaranteedInGrid.length - 1)];
+      s.add(n);
+    }
+    return s;
+  }
+
+  function renderTargets() {
+    elTargets.innerHTML = "";
+    [...targetSet].sort((a,b)=>a-b).forEach(n => {
+      const chip = document.createElement("span");
+      chip.className = "chip" + (foundSet.has(n) ? " done" : "");
+      chip.textContent = n;
+      elTargets.appendChild(chip);
+    });
+  }
+
+  function disableGrid(disabled = true) {
+    [...elGrid.children].forEach(cell => {
+      if (disabled) cell.classList.add("disabled");
+      else cell.classList.remove("disabled");
+    });
+  }
+
+  function newRound() {
+    stopTimer();
+
+    const cfg = MODES[modeNames[modeIndex]];
+    const extraTargets = Math.floor((level - 1) / 3);
+    const lessTime = Math.min(8, Math.floor((level - 1) / 4));
+    const targetCount = Math.min(cfg.targets + extraTargets, cfg.targets + 6);
+
+    totalTime = Math.max(10, cfg.time - lessTime);
+    timeLeft = totalTime;
+
+    targetSet.clear();
+    foundSet.clear();
+
+    elGrid.innerHTML = "";
+    const numbers = [];
+
+    for (let i = 0; i < cfg.gridSize; i++) numbers.push(randInt(cfg.min, cfg.max));
+
+    targetSet = uniqueTargets(targetCount, numbers);
+
+    numbers.forEach((num) => {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.textContent = num;
+
+      cell.addEventListener("click", () => {
+        if (!running) { showToast("Bonyeza Anza kwanza 🙂", "bad"); sBad(); return; }
+        initSound();
+
+        if (cell.classList.contains("hit")) return;
+        if (cell.classList.contains("disabled")) return;
+
+        const n = Number(cell.textContent);
+
+        if (targetSet.has(n) && !foundSet.has(n)) {
+          foundSet.add(n);
+          cell.classList.add("hit");
+          score += 10;
+          sGood();
+          showToast("Sahihi ✅ +10", "good");
+          renderTargets();
+          updateUI();
+
+          if (foundSet.size === targetSet.size) {
+            stopTimer();
+            const bonus = timeLeft * 2;
+            score += bonus;
+            updateUI();
+            sWin();
+            showToast(`Umeshinda! 🎉 Bonus +${bonus}`, "good");
+
+            level++;
+            disableGrid(true);
+            setTimeout(() => { newRound(); startTimer(); }, 900);
+          }
+        } else {
+          score = Math.max(0, score - 5);
+          cell.classList.add("miss");
+          sBad();
+          showToast("Ume-kosea ❌ -5", "bad");
+          updateUI();
+          setTimeout(() => cell.classList.remove("miss"), 250);
+        }
+      });
+
+      elGrid.appendChild(cell);
+    });
+
+    renderTargets();
+    disableGrid(false);
+    updateUI();
+  }
+
+  function resetGame() {
+    initSound();
+    sClick();
+    stopTimer();
+    level = 1;
+    score = 0;
+    newRound();
+    updateUI();
+    showToast("Game imereset ✅", "good");
+  }
+
+  function cycleMode() {
+    initSound();
+    sClick();
+    stopTimer();
+    modeIndex = (modeIndex + 1) % modeNames.length;
+    level = 1;
+    score = 0;
+    newRound();
+    updateUI();
+    showToast(`Mode: ${modeNames[modeIndex]}`, "good");
+  }
+
+  function toggleSound() {
+    soundOn = !soundOn;
+    localStorage.setItem(SOUND_KEY, soundOn ? "1" : "0");
+    if (soundOn) initSound();
+    updateSoundUI();
+    showToast(soundOn ? "Sound ON 🔊" : "Sound OFF 🔇", "good");
+    if (soundOn) { play(700, 0.08, "sine", 0.06); vibrate(15); }
+  }
+
+  // =========================
+  // EVENTS
+  // =========================
+  elStartBtn.addEventListener("click", toggleStartPause);
+  elResetBtn.addEventListener("click", resetGame);
+  elModeBtn.addEventListener("click", cycleMode);
+  elSoundBtn.addEventListener("click", toggleSound);
+
+  // =========================
+  // INIT
+  // =========================
+  updateSoundUI();
+  newRound();
+  updateUI();
+})();
+</script>
+</body>
+</html>
