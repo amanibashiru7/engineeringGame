@@ -2,7 +2,7 @@
 <html lang="sw">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
   <title>Number Hunt</title>
 
   <style>
@@ -14,6 +14,13 @@
       --bad:#ef4444;
       --accent:#38bdf8;
       --ring: rgba(56,189,248,.35);
+
+      /* MOBILE FIT VARS (zita-update na JS) */
+      --cols: 6;
+      --cellPadY: 10px;
+      --cellPadX: 6px;
+      --cellFont: 16px;
+      --gap: 8px;
     }
 
     *{ box-sizing:border-box; }
@@ -30,19 +37,20 @@
 
       color:var(--txt);
 
-      height:100vh;
+      /* muhimu: tumia 100svh badala ya 100vh (simu) */
+      height: 100svh;
       overflow:hidden;
       display:flex;
       align-items:center;
       justify-content:center;
-      padding:12px;
+      padding:10px;
     }
 
     /* Logo juu kulia */
     .logoBox{
       position: fixed;
-      top: 12px;
-      right: 12px;
+      top: 10px;
+      right: 10px;
       display:flex;
       align-items:center;
       gap:10px;
@@ -71,15 +79,15 @@
 
     .app{
       width:min(1040px, 100%);
-      height: calc(100vh - 24px);
+      height: calc(100svh - 20px);
       overflow:hidden;
       display:grid;
-      gap:12px;
+      gap:10px;
     }
 
     .top{
       display:flex;
-      gap:12px;
+      gap:10px;
       flex-wrap:wrap;
       align-items:stretch;
     }
@@ -128,7 +136,7 @@
       border:1px solid rgba(148,163,184,.18);
       border-radius:14px;
       padding:8px 10px;
-      min-width: 120px;
+      min-width: 110px;
       flex:1;
     }
 
@@ -173,6 +181,7 @@
     button:active{ transform: scale(.98); }
     button.secondary{ background:rgba(148,163,184,.10); border-color: rgba(148,163,184,.25); }
 
+    /* GRID WRAP: iwe flexible ndani ya screen */
     .gridWrap{
       background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
       border:1px solid rgba(148,163,184,.20);
@@ -180,7 +189,8 @@
       padding:12px;
       box-shadow: 0 10px 30px rgba(0,0,0,.28);
       overflow:hidden;
-      max-height: calc(100vh - 260px);
+      flex: 1;
+      min-height: 0;
     }
 
     .gridHeader{
@@ -217,16 +227,12 @@
       opacity: .95;
     }
 
+    /* GRID: columns zinadhibitiwa na --cols */
     .grid{
       display:grid;
-      gap:8px;
-      grid-template-columns: repeat(6, 1fr);
-    }
-    @media (min-width: 720px){
-      .grid{ grid-template-columns: repeat(8, 1fr); }
-    }
-    @media (min-width: 980px){
-      .grid{ grid-template-columns: repeat(10, 1fr); }
+      gap: var(--gap);
+      grid-template-columns: repeat(var(--cols), 1fr);
+      align-content: start;
     }
 
     .cell{
@@ -234,10 +240,10 @@
       background: rgba(17,24,39,.7);
       border:1px solid rgba(148,163,184,.18);
       border-radius:14px;
-      padding:10px 6px;
+      padding: var(--cellPadY) var(--cellPadX);
       text-align:center;
       font-weight:900;
-      font-size:16px;
+      font-size: var(--cellFont);
       cursor:pointer;
       transition: transform .08s ease, border-color .15s ease, background .15s ease, box-shadow .15s ease, opacity .15s ease;
       box-shadow: 0 0 0 0 var(--ring);
@@ -287,12 +293,20 @@
     }
     .toast.good{ border-color: rgba(34,197,94,.35); }
     .toast.bad{ border-color: rgba(239,68,68,.35); }
+
+    /* ✅ MOBILE: ficha panel ya sheria ili grid ipate nafasi */
+    @media (max-width: 520px){
+      .panel.rulesPanel{ display:none; }
+      .panel{ padding:10px; min-width: 0; }
+      button{ padding:9px 10px; }
+      .stat .value{ font-size:16px; }
+    }
   </style>
 </head>
 
 <body>
 
-  <!-- LOGO (weka logo.jpg kwenye folder moja na index.html) -->
+  <!-- LOGO -->
   <div class="logoBox">
     <img src="aman.jpg" alt="Logo" onerror="this.style.display='none'">
     <div class="txt">
@@ -303,7 +317,7 @@
 
   <div class="app">
     <div class="top">
-      <div class="panel">
+      <div class="panel mainPanel" id="topPanel">
         <div class="titleRow">
           <h1>🎯 Number Hunt</h1>
           <div class="chip" id="modeChip">Mode: Normal</div>
@@ -340,7 +354,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel rulesPanel">
         <h1>📌 Sheria (Quick)</h1>
         <div class="small" id="rules">
           • Targets hutolewa randomly.<br>
@@ -394,7 +408,6 @@
   let targetSet = new Set();
   let foundSet = new Set();
 
-  // sound state (persist)
   let soundOn = (localStorage.getItem(SOUND_KEY) ?? "1") === "1";
 
   // =========================
@@ -411,6 +424,7 @@
   const elModeBtn = document.getElementById("modeBtn");
   const elModeChip = document.getElementById("modeChip");
   const elSoundBtn = document.getElementById("soundBtn");
+  const topPanel = document.getElementById("topPanel");
   const toast = document.getElementById("toast");
 
   // =========================
@@ -426,7 +440,6 @@
   }
 
   function vibrate(pattern){
-    // works on many android devices; ignored if not supported
     if (navigator.vibrate) navigator.vibrate(pattern);
   }
 
@@ -515,10 +528,8 @@
   }
 
   function toggleStartPause() {
-    // first user gesture = allow audio on mobile
     initSound();
     sClick();
-
     if (!running && timeLeft > 0) startTimer();
     else stopTimer();
   }
@@ -549,23 +560,81 @@
     });
   }
 
+  // =========================
+  // ✅ MOBILE AUTO-FIT (HAPA NDIO FIX)
+  // =========================
+  function applyMobileFit(desiredGridSize){
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // chagua cols kwa simu
+    let cols = (vw <= 520) ? 6 : (vw < 900 ? 8 : 10);
+
+    // pata nafasi ya grid: (vh - top panel height - padding)
+    const topH = topPanel.getBoundingClientRect().height;
+    const headerH = 62;  // Targets header approx
+    const safe = 30;     // safety space
+
+    const avail = Math.max(220, vh - topH - headerH - safe);
+
+    // cell size estimation
+    const gap = (vw <= 520) ? 7 : 8;
+    const minCell = (vw <= 360) ? 36 : 40; // width px
+
+    // max rows zinazotosha
+    const cellH = (vw <= 360) ? 44 : 48;
+    const maxRows = Math.max(4, Math.floor((avail + gap) / (cellH + gap)));
+
+    // we want gridSize that fits: rows*cols
+    let gridSize = cols * maxRows;
+
+    // cap so game stays reasonable
+    gridSize = Math.min(gridSize, desiredGridSize);
+    gridSize = Math.max(gridSize, cols * 4); // at least 4 rows
+
+    // update CSS vars
+    document.documentElement.style.setProperty("--cols", String(cols));
+    document.documentElement.style.setProperty("--gap", gap + "px");
+
+    // font/padding scaling
+    if (vw <= 360){
+      document.documentElement.style.setProperty("--cellPadY", "9px");
+      document.documentElement.style.setProperty("--cellPadX", "5px");
+      document.documentElement.style.setProperty("--cellFont", "15px");
+    } else if (vw <= 520){
+      document.documentElement.style.setProperty("--cellPadY", "10px");
+      document.documentElement.style.setProperty("--cellPadX", "6px");
+      document.documentElement.style.setProperty("--cellFont", "16px");
+    } else {
+      document.documentElement.style.setProperty("--cellPadY", "10px");
+      document.documentElement.style.setProperty("--cellPadX", "6px");
+      document.documentElement.style.setProperty("--cellFont", "16px");
+    }
+
+    return gridSize;
+  }
+
   function newRound() {
     stopTimer();
 
-    const cfg = MODES[modeNames[modeIndex]];
+    const baseCfg = MODES[modeNames[modeIndex]];
+
     const extraTargets = Math.floor((level - 1) / 3);
     const lessTime = Math.min(8, Math.floor((level - 1) / 4));
-    const targetCount = Math.min(cfg.targets + extraTargets, cfg.targets + 6);
+    const targetCount = Math.min(baseCfg.targets + extraTargets, baseCfg.targets + 6);
 
-    totalTime = Math.max(10, cfg.time - lessTime);
+    totalTime = Math.max(10, baseCfg.time - lessTime);
     timeLeft = totalTime;
 
     targetSet.clear();
     foundSet.clear();
-
     elGrid.innerHTML = "";
-    const numbers = [];
 
+    // ✅ adapt gridSize kwa simu ili “zingie screen”
+    const cfg = { ...baseCfg };
+    cfg.gridSize = applyMobileFit(baseCfg.gridSize);
+
+    const numbers = [];
     for (let i = 0; i < cfg.gridSize; i++) numbers.push(randInt(cfg.min, cfg.max));
 
     targetSet = uniqueTargets(targetCount, numbers);
@@ -663,6 +732,13 @@
   elModeBtn.addEventListener("click", cycleMode);
   elSoundBtn.addEventListener("click", toggleSound);
 
+  // ✅ ukigeuza simu (portrait/landscape) - rebuild
+  window.addEventListener("resize", () => {
+    // usibomoe score/level, tuna rebuild tu round kwa fit
+    newRound();
+    updateUI();
+  });
+
   // =========================
   // INIT
   // =========================
@@ -673,4 +749,3 @@
 </script>
 </body>
 </html>
-
